@@ -1,0 +1,405 @@
+<!-- https://aerosense.static.domains/ the realtime monitoring webpage is hosted on this free domain -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerosense Air Quality Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/justgage@1.4.2/dist/justgage.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+/* Base Styles */
+/* Base Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+.gauges-and-chart-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
+    margin: 20px;
+}
+
+.gauges-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    width: 55%; /* Adjusted from 60% to 55% */
+    max-width: 55%; /* Adjusted from 60% to 55% */
+}
+
+.gauge-wrapper {
+    width: 45%;
+    margin: 10px;
+}
+
+.chart-container {
+    width: 45%; /* Adjusted from 40% to 45% */
+    max-width: 45%; /* Adjusted from 40% to 45% */
+    padding: 10px;
+}
+
+.chart-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.historical-toggle {
+    margin-top: 20px;
+}
+
+.line {
+    fill: none;
+    stroke-width: 2px;
+}
+
+.x-axis path,
+.y-axis path {
+    display: none;
+}
+
+/* Responsive design for mobile devices */
+@media (max-width: 768px) {
+    .gauges-and-chart-container {
+        flex-direction: column; /* Stack items vertically on mobile */
+        align-items: center;
+    }
+
+    .gauges-container {
+        width: 100%;
+    }
+
+    .chart-container {
+        width: 100%; /* Full width on mobile */
+        max-width: 100%; /* Ensure it does not exceed viewport */
+        margin-top: 20px;
+        padding-left: 20px; /* Increased padding */
+        padding-right: 20px; /* Increased padding */
+    }
+
+    .chart-wrapper {
+        width: 100%; /* Ensure chart content fits within container */
+        height: auto; /* Adjust height based on aspect ratio */
+    }
+
+    #d3ChartContainer {
+        width: 100%; /* Full width to utilize available space */
+        height: auto; /* Adjust height based on aspect ratio */
+    }
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aerosense Air Quality Dashboard</h1>
+        <div>
+            <label for="tableSelect">Select Location: </label>
+            <select id="tableSelect"></select>
+        </div>
+        <div class="gauges-and-chart-container">
+            <div class="gauges-container">
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="temperatureGauge"></div>
+                    <div class="gauge-label">Temperature</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="humidityGauge"></div>
+                    <div class="gauge-label">Humidity</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="TVOCGauge"></div>
+                    <div class="gauge-label">TVOC</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="CH2OGauge"></div>
+                    <div class="gauge-label">CH2O</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="CO2Gauge"></div>
+                    <div class="gauge-label">CO2</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="PM25Gauge"></div>
+                    <div class="gauge-label">PM 2.5</div>
+                </div>
+                <div class="gauge-wrapper">
+                    <div class="gauge" id="PM10Gauge"></div>
+                    <div class="gauge-label">PM 10</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <div id="d3ChartContainer" style="width: 100%; height: auto;"></div>
+                    <div class="historical-toggle">
+                        <button data-range="30min">Last 30 Minutes</button>
+                        <button data-range="1hr">Last 1 Hour</button>
+                        <button data-range="1day">Last 1 Day</button>
+                        <input type="datetime-local" id="startDate">
+                        <input type="datetime-local" id="endDate">
+                        <button id="customRange">Apply Custom Range</button>
+                        <select id="dataSelect">
+                            <option value="temperature">Temperature</option>
+                            <option value="humidity">Humidity</option>
+                            <option value="TVOC">TVOC</option>
+                            <option value="CH2O">CH2O</option>
+                            <option value="CO2">CO2</option>
+                            <option value="PM25">PM 2.5</option>
+                            <option value="PM10">PM 10</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+
+        const gauges = {};
+        let intervalId;
+
+        function updateGauge(gaugeId, value, min, max, unit) {
+            if (!gauges[gaugeId]) {
+                gauges[gaugeId] = new JustGage({
+                    id: gaugeId,
+                    value: value,
+                    min: min,
+                    max: max,
+                    title: document.getElementById(gaugeId).closest('.gauge-wrapper').querySelector('.gauge-label').innerText,
+                    label: unit,
+                    decimals: 2,
+                    gaugeWidthScale: 0.6,
+                    counter: true
+                });
+            } else {
+                gauges[gaugeId].config.min = min;
+                gauges[gaugeId].config.max = max;
+                gauges[gaugeId].config.label = unit;
+                gauges[gaugeId].refresh(value);
+            }
+        }
+
+        const supabaseUrl = ''; // SUPABASE DATABASE ENDPOINT URL 
+        const supabaseKey = ''; // SUPABSE PROJECT PUBLIC KEY
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        async function fetchTables() {
+            try {
+                const { data, error } = await supabase.rpc('list_tables');
+                if (error) throw error;
+
+                const tableSelect = document.getElementById('tableSelect');
+                tableSelect.innerHTML = '';
+                data.forEach(table => {
+                    const option = document.createElement('option');
+                    option.value = table.table_name;
+                    option.textContent = table.table_name;
+                    tableSelect.appendChild(option);
+                });
+
+                // Initial update
+                const initialTable = tableSelect.value;
+                updateGauges(initialTable);
+                intervalId = setInterval(() => updateGauges(initialTable), 2000);
+
+                tableSelect.addEventListener('change', () => {
+                    clearInterval(intervalId);
+                    const newTable = tableSelect.value;
+                    updateGauges(newTable);
+                    intervalId = setInterval(() => updateGauges(newTable), 2000);
+                });
+
+            } catch (error) {
+                console.error('Error fetching tables:', error.message);
+                alert('Error fetching tables. Please try again later.');
+            }
+        }
+
+        async function updateGauges(tableName) {
+            try {
+                const { data, error } = await supabase
+                    .from(tableName)
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const latestData = data[0];
+
+                if (latestData) {
+                    updateGauge('temperatureGauge', latestData.TEMPERATURE, -10, 50, '°C');
+                    updateGauge('humidityGauge', latestData.HUMIDITY, 0, 100, '%');
+                    updateGauge('TVOCGauge', latestData.TVOC, 0, 500, 'ppb');
+                    updateGauge('CH2OGauge', latestData.CH2O, 0, 100, 'ppm');
+                    updateGauge('CO2Gauge', latestData.CO2, 0, 2000, 'ppm');
+                    updateGauge('PM25Gauge', latestData.PM2_5, 0, 500, 'µg/m³');
+                    updateGauge('PM10Gauge', latestData.PM10, 0, 500, 'µg/m³');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error.message);
+                alert('Error fetching data. Please try again later.');
+            }
+        }
+
+        async function fetchHistoricalData(tableName, startTime, endTime) {
+            try {
+                console.log(`Fetching historical data for table: ${tableName} from ${startTime} to ${endTime}`);
+                const { data, error } = await supabase
+                    .from(tableName)
+                    .select('*')
+                    .gte('created_at', startTime)
+                    .lte('created_at', endTime)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                console.log('Fetched Data:', data);
+
+                const processedData = data.map(entry => ({
+                    date: new Date(entry.created_at),
+                    temperature: entry.TEMPERATURE,
+                    humidity: entry.HUMIDITY,
+                    TVOC: entry.TVOC,
+                    CH2O: entry.CH2O,
+                    CO2: entry.CO2,
+                    PM25: entry.PM2_5,
+                    PM10: entry.PM10
+                }));
+
+                renderChart(processedData);
+            } catch (error) {
+                console.error('Error fetching historical data:', error.message);
+                alert('Error fetching historical data. Please try again later.');
+            }
+        }
+
+        function renderChart(data) {
+    const selectedValue = document.getElementById('dataSelect').value;
+
+    const container = document.getElementById('d3ChartContainer');
+    const containerWidth = container.clientWidth;
+    const containerHeight = containerWidth * 0.5; // Maintain a 2:1 aspect ratio
+
+    const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+    const width = containerWidth - margin.left - margin.right;
+    const height = containerHeight - margin.top - margin.bottom;
+
+    d3.select('#d3ChartContainer').html(''); // Clear previous chart
+
+    const svg = d3.select('#d3ChartContainer').append('svg')
+        .attr('width', containerWidth)
+        .attr('height', containerHeight)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleTime()
+        .domain(d3.extent(data, d => d.date))
+        .range([0, width]);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d[selectedValue])])
+        .nice()
+        .range([height, 0]);
+
+    const line = d3.line()
+        .x(d => x(d.date))
+        .y(d => y(d[selectedValue]));
+
+    svg.append('path')
+        .data([data])
+        .attr('class', 'line')
+        .attr('d', line)
+        .style('fill', 'none')
+        .style('stroke', 'steelblue')
+        .style('stroke-width', '2px');
+
+    svg.append('g')
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+    svg.append('g')
+        .attr('class', 'y-axis')
+        .call(d3.axisLeft(y));
+}
+
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTables();
+
+            document.querySelectorAll('.historical-toggle button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const range = button.getAttribute('data-range');
+                    const endDate = new Date();
+                    let startDate;
+
+                    switch (range) {
+                        case '30min':
+                            startDate = new Date(endDate.getTime() - 30 * 60 * 1000);
+                            break;
+                        case '1hr':
+                            startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+                            break;
+                        case '1day':
+                            startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+                            break;
+                        default:
+                            return;
+                    }
+
+                    fetchHistoricalData(document.getElementById('tableSelect').value, startDate.toISOString(), endDate.toISOString());
+                });
+            });
+
+            document.getElementById('customRange').addEventListener('click', () => {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                if (startDate && endDate) {
+                    fetchHistoricalData(document.getElementById('tableSelect').value, startDate, endDate);
+                }
+            });
+
+            document.getElementById('dataSelect').addEventListener('change', () => {
+                const range = document.querySelector('.historical-toggle button[data-range]').getAttribute('data-range');
+                const endDate = new Date();
+                let startDate;
+
+                switch (range) {
+                    case '30min':
+                        startDate = new Date(endDate.getTime() - 30 * 60 * 1000);
+                        break;
+                    case '1hr':
+                        startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+                        break;
+                    case '1day':
+                        startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+                        break;
+                    default:
+                        return;
+                }
+
+                fetchHistoricalData(document.getElementById('tableSelect').value, startDate.toISOString(), endDate.toISOString());
+            });
+        });
+    </script>
+</body>
+</html>
