@@ -1,0 +1,45 @@
+services:
+  payment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PG_HOST=
+      - PG_PORT=
+      - PG_NAME=
+      - PG_USER=
+      - PG_PASS=
+      - PG_SSLMODE=
+      - REDIS_ADDRESS=
+      - REDIS_PASSWORD=
+      - REDIS_DB=
+      - REDIS_URL=
+      - DATABASE_URL=
+      - PORT=
+      - ENV=
+      - RUN_SEEDS=
+    ports:
+      - "9001:9001"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_DB=
+      - POSTGRES_USER=
+      - POSTGRES_PASSWORD=
+      - PGPORT=
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  redis:
+    image: redis:6-alpine
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

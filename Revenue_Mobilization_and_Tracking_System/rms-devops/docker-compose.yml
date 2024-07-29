@@ -1,0 +1,145 @@
+services:
+  gateway:
+    image: "blackprince/rms-gateway-base:latest"
+    ports:
+      - "5455:5455"
+    environment:
+      - PORT=5455
+      - FILE=http://fileserver:9000
+      - MANAGEMENT=http://management:9002
+      - PAYMENT=http://payment:9001
+    networks:
+      - exposed
+      - monitoring
+      - backend
+    depends_on:
+      - management
+      - fileserver
+      - payment
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5455/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  management:
+    image: "blackprince/rms-management-base:latest"
+    command: /code/scripts/run.sh
+    depends_on:
+      - geo-postgres
+      - redis
+    environment:
+      - DATABASE_USER=
+      - DATABASE_PASSWORD=
+      - DATABASE_HOST=
+      - DATABASE_NAME=
+      - DATABASE_PORT=
+      - REDIS_DB=
+      - REDIS_PASSWORD=
+      - REDIS_HOST=
+      - REDIS_PORT=
+      - REDIS_URL=
+      - SECRET_KEY=
+      - ALGORITHM=
+      - ACCESS_TOKEN_EXPIRE_MINUTES=
+    networks:
+      - backend
+
+  fileserver:
+    image: "blackprince/rms-fileserver-base:0.1.1"
+    environment:
+      - STORAGE_PATH='./uploads'
+      - SERVER_PORT=9000
+    volumes:
+      - storage:/server/uploads
+    networks:
+      - backend
+
+  payment:
+    image: "blackprince/rms-paystack:latest"
+    environment:
+      - SERVER_PORT=
+      - PAYSTACK_SECRET_KEY=
+      - DB_HOST=
+      - DB_USER=
+      - DB_PASSWORD=
+      - DB_NAME=
+      - DB_PORT=
+      - COURIER_API_KEY=
+      - ARKESEL_API_KEY=
+    depends_on:
+      - postgres
+    networks:
+      - direct
+      - backend
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9900:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=
+    ports:
+      - "4000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    volumes:
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_DB=
+      - POSTGRES_USER=
+      - POSTGRES_PASSWORD=
+      - PGPORT=
+    volumes:
+      - payment_postgres_data:/var/lib/postgresql/data
+    networks:
+      - direct
+
+  # geodb will be update for new mmda-business-buildings data
+  geo-postgres:
+    image: "blackprince/rms-geodb-base:0.1.4"
+    volumes:
+        - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=
+      - POSTGRES_USER=
+      - POSTGRES_DB=
+    networks:
+      - backend
+
+  redis:
+    image: "redis/redis-stack"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+  payment_postgres_data:
+  redis-data:
+  storage:
+
+networks:
+  direct:
+    driver: bridge
+  exposed:
+    driver: bridge
+  monitoring:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true
