@@ -1,0 +1,10 @@
+SET standard_conforming_strings = ON;
+CREATE SCHEMA IF NOT EXISTS spatial_data;
+DROP TABLE IF EXISTS "spatial_data"."businesses" CASCADE;
+BEGIN;
+CREATE TABLE "spatial_data"."businesses"();
+ALTER TABLE "spatial_data"."businesses" ADD COLUMN "ogc_fid" SERIAL CONSTRAINT "businesses_pk" PRIMARY KEY;
+SELECT AddGeometryColumn('spatial_data','businesses','wkb_geometry',4326,'POINT',2);
+ALTER TABLE "spatial_data"."businesses" ADD COLUMN "name" VARCHAR(80);
+CREATE INDEX "businesses_wkb_geometry_geom_idx" ON "spatial_data"."businesses" USING GIST ("wkb_geometry");
+COMMIT;
