@@ -1,3 +1,3 @@
 #need to add these files to be able use module
-./payment_package/config
-./sms_package/config
+payment_package/config.py
+sms_package/config.py
