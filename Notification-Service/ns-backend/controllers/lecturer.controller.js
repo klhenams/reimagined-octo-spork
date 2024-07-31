@@ -3,14 +3,13 @@ const { MongoClient } = require("mongodb");
 const axios = require("axios");
 
 const password = process.env.PASSWORD;
-const api_key = process.env.API_KEY
+const api_key = process.env.API_KEY;
+const MONGO_URL = process.env.MONGO_DB_URL;
 
 const login = async (req, res) => {
   try {
     // open connection to db
-    const client = await MongoClient.connect(
-      "mongodb+srv://mkweeks:mkweeks@cluster0.ihkdevb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    );
+    const client = await MongoClient.connect(MONGO_URL);
     const db = client.db("computer-eng");
     const lecturer = await db
       .collection("lecturers")
@@ -32,9 +31,7 @@ const login = async (req, res) => {
 //query db for list of students by course
 const getStudents = async (req, res) => {
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://mkweeks:mkweeks@cluster0.ihkdevb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    );
+    const client = await MongoClient.connect(MONGO_URL);
     const db = client.db("computer-eng");
     const students = await db
       .collection("students")
@@ -68,7 +65,7 @@ const sendEmail = async (req, res) => {
       text: req.body.params.text,
     });
 
-    res.status(200).json({message: "Message sent!"});
+    res.status(200).json({ message: "Message sent!" });
   }
   main().catch(console.error);
 };
@@ -95,7 +92,7 @@ const sendsms = async (req, res) => {
       res.status(200).json(response.data);
     })
     .catch(function (error) {
-      res.status(500).json(error)
+      res.status(500).json(error);
     });
 };
 

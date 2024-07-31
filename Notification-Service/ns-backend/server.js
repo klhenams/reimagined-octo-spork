@@ -1,10 +1,8 @@
 //dependencies
 const express = require("express");
-const dotenv = require('dotenv');
+const dotenv = require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://mkweeks:mkweeks@cluster0.ihkdevb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-dotenv.config();
+const MONGO_URL = process.env.MONGO_DB_URL
 
 const mainRoutes = require('./routes/routes.js')
 
@@ -18,12 +16,13 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-  const client = new MongoClient(uri, {
+  const client = new MongoClient(MONGO_URL, {
     serverApi: {
       version: ServerApiVersion.v1,
       strict: true,
       deprecationErrors: true,
     },
+
   });
   
   async function run() {
