@@ -1,0 +1,14 @@
+BEGIN;
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000000000000000F87F000000000000F87F', NULL, NULL);
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000682B4F0A5EF0F8BFDA2B589404AB1A40', 1, 'Rauf Enterprise');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000EC68976065F0F8BF2F1D2071EDAA1A40', 2, 'Bengilla Nails shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E61000008D3123C65EF0F8BF9FE8C983E4AA1A40', 3, 'Kwabs Phones Shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000B9E732F855F0F8BF70DDDBDAD8AA1A40', 4, 'Syrax Fridges Repair');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000607B139467F0F8BFEC392F00C7AA1A40', 5, 'Drogon Provision Shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E61000009F84D1AD68F0F8BFBA9602A6CCAA1A40', 6, 'Drogon Momo Vendor');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000B55FD94664F0F8BF53F2FD24B4AA1A40', 7, 'Frankie Sewing Services');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000FABB45486FF0F8BF39FF2237AAAA1A40', 8, 'Spare Parts Shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E61000000EE7116B74F0F8BF2D66B4B896AA1A40', 9, 'Tools Shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E61000002C8D6E3A88F0F8BFF641A2127AAA1A40', 10, 'Furniture Shop');
+INSERT INTO "spatial_data"."businesses" ("geom", "id", "name") VALUES ('0101000020E6100000F25BCE5B82F0F8BF47A2C56B72AA1A40', 12, 'Abdul Funeral Services');
+COMMIT;

@@ -1,0 +1,1 @@
+docker run -d --name rms-testdb -p 5432:5432 -e POSTGRES_DB= -e POSTGRES_HOST= -e POSTGRES_USER= -e POSTGRES_PASSWORD= rms-geodb-base:latest

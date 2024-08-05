@@ -1,0 +1,32 @@
+services:
+  payment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=
+      - PAYSTACK_SECRET_KEY=
+      - DB_HOST=
+      - DB_USER=
+      - DB_PASSWORD=
+      - DB_NAME=
+      - DB_PORT=
+      - COURIER_API_KEY=
+      - ARKESEL_API_KEY=
+    ports:
+      - "9001:9001"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_DB=
+      - POSTGRES_USER=
+      - POSTGRES_PASSWORD=
+      - PGPORT=
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
