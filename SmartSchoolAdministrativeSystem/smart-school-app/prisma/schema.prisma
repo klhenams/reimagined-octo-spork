@@ -1,0 +1,292 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// MODELS
+
+model User {
+  id                  String                @id @default(uuid())
+  email               String                @unique
+  password            String
+  role                USER_ROLE
+  createAt            DateTime              @default(now())
+  SchoolAdministrator SchoolAdministrator[]
+  Teacher             Teacher[]
+}
+
+model Student {
+  id                    String               @id @default(uuid())
+  id_num                Int                  @default(autoincrement())
+  index_number          Int                  @default(autoincrement())
+  phone_number          String?
+  email                 String? //
+  first_name            String //
+  last_name             String //
+  other_names           String //
+  age                   Int //
+  dob                   DateTime //
+  gender                GENDER //
+  address_type          ADDRESS_TYPE //
+  family_size           FAMILY_SIZE //
+  parent_status         PARENT_STATUS //
+  mother_education      EDUCATION //
+  father_education      EDUCATION //
+  mother_job            JOB //
+  father_job            JOB //
+  family_relationship   Int //
+  guardian              GUARDIAN //
+  schoolId              String
+  school                School               @relation(fields: [schoolId], references: [id])
+  year                  Int //
+  travel_time           TRAVEL_TIME //
+  school_choice_reason  SCHOOL_CHOICE_REASON //
+  study_time            WEEKLY_STUDY_TIME
+  school_support        Boolean //
+  family_support        Boolean //
+  extra_paid_classes    Boolean //
+  activities            Boolean //
+  nursery_school        Boolean //
+  higher_ed             Boolean //
+  internet_access       Boolean //
+  romantic_relationship Boolean //
+  free_time             Int                  @default(0)
+  social                Int                  @default(0)
+  time_registered       DateTime             @default(now()) //
+  attendance            Attendance[]
+  grades                Grade[]
+  state                 String //
+  city                  String //
+  course                Course               @relation(fields: [courseId], references: [id])
+  courseId              Int
+  updatedAt             DateTime             @updatedAt
+  imagePath             String?
+}
+
+model Grade {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  subjectId   Int
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId   String
+  score       Float
+  passed      Boolean
+  teacher     Teacher  @relation(fields: [teacherId], references: [id])
+  teacherId   String
+  dateEntered DateTime @default(now())
+}
+
+model School {
+  id                  String               @id @default(uuid())
+  name                String
+  region              String
+  district            String
+  Student             Student[]
+  Teacher             Teacher[]
+  badgeImagePath      String
+  SchoolAdministrator SchoolAdministrator?
+  Class               Class[]
+}
+
+model Teacher {
+  id                    String       @id
+  user                  User         @relation(fields: [id], references: [id])
+  first_name            String
+  last_name             String
+  other_names           String
+  gender                GENDER
+  age                   Int
+  dob                   DateTime
+  phone_number          String?
+  country               String
+  state                 String
+  city                  String
+  educational_level     EDUCATION
+  num_seminars_attended Int
+  length_of_service     Int
+  school                School       @relation(fields: [schoolId], references: [id])
+  schoolId              String
+  subject               Subject      @relation(fields: [subjectId], references: [id])
+  subjectId             Int
+  updatedAt             DateTime     @updatedAt
+  imagePath             String
+  Attendance            Attendance[]
+  Grade                 Grade[]
+}
+
+model SchoolAdministrator {
+  id          String @id
+  user        User   @relation(fields: [id], references: [id])
+  first_name  String
+  last_name   String
+  other_names String
+  imagePath   String
+  school      School @relation(fields: [schoolId], references: [id])
+  schoolId    String @unique
+}
+
+model Course {
+  code      String    @unique
+  id        Int       @id @default(autoincrement())
+  name      String
+  Student   Student[]
+  subjects  Subject[]
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+}
+
+model Subject {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  name           String
+  math_intensive Boolean
+  grades         Grade[]
+  Teacher        Teacher[]
+  updatedAt      DateTime  @updatedAt
+  Course         Course[]
+  createdAt      DateTime  @default(now())
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  meeting   Int // ordinal of meeting (eg 1st meeting, 2nd etc)
+  date      DateTime @default(now()) @db.Date
+  time      DateTime @default(now()) @db.Time()
+  present   Boolean
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  teacherId String
+
+  @@unique(name: "attendance_item", [teacherId, meeting, studentId, date])
+}
+
+model Class {
+  school   School @relation(fields: [schoolId], references: [id])
+  schoolId String
+  name     String
+  classId  String
+
+  @@id(name: "school_class", [schoolId, classId])
+}
+
+// model to store deleted students data (student personal information removed)
+model SavedStudentData {
+  id                    Int                  @id @default(autoincrement())
+  age                   Int //
+  gender                GENDER //
+  address_type          ADDRESS_TYPE //
+  family_size           FAMILY_SIZE //
+  parent_status         PARENT_STATUS //
+  mother_education      EDUCATION //
+  father_education      EDUCATION //
+  mother_job            JOB //
+  father_job            JOB //
+  family_relationship   Int //
+  guardian              GUARDIAN //
+  schoolId              String
+  year                  Int //
+  travel_time           TRAVEL_TIME //
+  school_choice_reason  SCHOOL_CHOICE_REASON //
+  study_time            WEEKLY_STUDY_TIME
+  school_support        Boolean //
+  family_support        Boolean //
+  extra_paid_classes    Boolean //
+  activities            Boolean //
+  nursery_school        Boolean //
+  higher_ed             Boolean //
+  internet_access       Boolean //
+  romantic_relationship Boolean //
+  free_time             Int                  @default(0)
+  social                Int                  @default(0)
+  time_registered       DateTime             @default(now()) //
+  absences              Int
+  state                 String //
+  city                  String //
+  class_failures        Int
+  createdAt             DateTime             @default(now())
+  score                 Float
+  math_intensive        Boolean
+}
+
+// ENUMS
+enum USER_ROLE {
+  admin
+  schoolAdmin
+  teacher
+  student
+}
+
+enum GENDER {
+  male
+  female
+}
+
+enum PARENT_STATUS {
+  together
+  apart
+}
+
+enum ADDRESS_TYPE {
+  rural
+  urban
+}
+
+enum FAMILY_SIZE {
+  less_than_or_equal_to_3
+  greater_than_3
+}
+
+enum EDUCATION {
+  none
+  elementary
+  middle
+  secondary
+  higher_education
+}
+
+enum JOB {
+  unemployed
+  civil
+  health
+  education
+  other
+}
+
+enum SCHOOL_CHOICE_REASON {
+  home
+  reputation
+  course
+  other
+}
+
+enum GUARDIAN {
+  mother
+  father
+  other
+}
+
+enum TRAVEL_TIME {
+  less_than_15
+  within_15_and_30
+  within_30_and_hour
+  greater_than_hour
+}
+
+enum WEEKLY_STUDY_TIME {
+  less_than_2_hours
+  within_2_and_5_hours
+  within_5_and_10_hours
+  greater_than_10_hours
+}
